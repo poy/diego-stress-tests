@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -30,11 +31,9 @@ func main() {
 		maxSecondsTilCrash = 0
 	}
 
-	vcapApplication := os.Getenv("VCAP_APPLICATION")
-	vcapApplicationBytes := []byte(vcapApplication)
-
 	var requestTicker, logTicker *time.Ticker
 	var crashTimer *time.Timer
+	fakeData := []byte(strings.Repeat("X", 256))
 
 	if requestRate > 0 {
 		requestTicker = time.NewTicker(time.Duration(float64(time.Second) / requestRate))
@@ -67,7 +66,7 @@ func main() {
 			case <-requestTicker.C:
 				go hitEndpoint(endpointToHit)
 			case <-logTicker.C:
-				go log.Println(vcapApplication)
+				go log.Println(fakeData)
 			case <-crashTimer.C:
 				panic("freak out")
 			}
@@ -75,7 +74,7 @@ func main() {
 	}()
 
 	err = http.ListenAndServe("0.0.0.0:"+os.Getenv("PORT"), http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
-		rw.Write(vcapApplicationBytes)
+		rw.Write(fakeData)
 	}))
 
 	if err != nil {
